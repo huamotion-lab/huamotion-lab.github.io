@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Easy Move Block - 進階視覺測試器</title>
+    <style>
+        :root {
+            --bg-color: #a855f7;
+            --brd-color: #000000;
+            --brd-width: 2.5px;
+            --shd-color: #000000;
+            --shd-y: 4px;
+        }
+
+        body { 
+            background: #f0f4f8; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 40px 20px;
+            color: #334155;
+        }
+
+        /* 模擬遊戲中的方塊 */
+        .preview-container {
+            background: white;
+            padding: 60px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .block-preview {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            border-radius: 12px;
+            /* 這裡綁定變數 */
+            background: var(--bg-color);
+            border: var(--brd-width) solid var(--brd-color);
+            box-shadow: 0 var(--shd-y) 0 var(--shd-color);
+            transition: all 0.1s;
+        }
+
+        /* 控制面板 */
+        .panel {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 450px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 0.85rem; font-weight: bold; color: #64748b; }
+        input[type="color"] { width: 100%; height: 40px; cursor: pointer; border: 2px solid #f1f5f9; border-radius: 8px; padding: 2px; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+
+        /* 代碼輸出區 */
+        .output-box {
+            grid-column: span 2;
+            background: #1e293b;
+            color: #cbd5e1;
+            padding: 15px;
+            border-radius: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            position: relative;
+        }
+        .output-box span { color: #38bdf8; } /* 屬性值顏色 */
+        .output-box b { color: #fbbf24; }   /* 註解顏色 */
+
+        .preset-btns {
+            grid-column: span 2;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 15px;
+        }
+        .p-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 style="margin-bottom: 10px;">方塊更衣室 v2</h2>
+    <p style="color: #94a3b8; margin-bottom: 30px;">調整滑桿與顏色，直到你覺得眼睛舒服為止</p>
+
+    <div class="preview-container">
+        <div id="targetBlock" class="block-preview">▲</div>
+    </div>
+
+    <div class="panel">
+        <div class="control-group">
+            <label>方塊顏色 (Background)</label>
+            <input type="color" id="bgColor" value="#8b5cf6">
+        </div>
+
+        <div class="control-group">
+            <label>邊框/陰影顏色 (Black?)</label>
+            <input type="color" id="brdColor" value="#000000">
+        </div>
+
+        <div class="control-group">
+            <label>邊框粗細: <span id="v-brd">2.5</span>px</label>
+            <input type="range" id="brdWidth" min="0" max="10" step="0.5" value="2.5">
+        </div>
+
+        <div class="control-group">
+            <label>陰影厚度 (3D感): <span id="v-shd">4</span>px</label>
+            <input type="range" id="shdY" min="0" max="15" step="1" value="4">
+        </div>
+
+        <div class="preset-btns">
+            <button class="p-btn" style="background:#10b981" onclick="setPreset('#10b981')">翡翠綠</button>
+            <button class="p-btn" style="background:#f59e0b" onclick="setPreset('#f59e0b')">琥珀橘</button>
+            <button class="p-btn" style="background:#0ea5e9" onclick="setPreset('#0ea5e9')">天空藍</button>
+            <button class="p-btn" style="background:#f43f5e" onclick="setPreset('#f43f5e')">玫瑰紅</button>
+            <button class="p-btn" style="background:#8b5cf6" onclick="setPreset('#8b5cf6')">薰衣草紫</button>
+        </div>
+
+        <div class="output-box" id="cssOutput">
+            /* 直接複製這段到 .block 基礎樣式 */<br>
+            .block {<br>
+            &nbsp;&nbsp;border: <span>2.5px</span> solid <span>#000000</span>;<br>
+            &nbsp;&nbsp;box-shadow: 0 <span>4px</span> 0 <span>#000000</span>;<br>
+            }
+        </div>
+    </div>
+
+    <script>
+        const block = document.getElementById('targetBlock');
+        const cssOutput = document.getElementById('cssOutput');
+        
+        const inputs = {
+            bg: document.getElementById('bgColor'),
+            brdC: document.getElementById('brdColor'),
+            brdW: document.getElementById('brdWidth'),
+            shdY: document.getElementById('shdY')
+        };
+
+        const labels = {
+            brdW: document.getElementById('v-brd'),
+            shdY: document.getElementById('v-shd')
+        };
+
+        function update() {
+            const root = document.documentElement;
+            root.style.setProperty('--bg-color', inputs.bg.value);
+            root.style.setProperty('--brd-color', inputs.brdC.value);
+            root.style.setProperty('--brd-width', inputs.brdW.value + 'px');
+            root.style.setProperty('--shd-color', inputs.brdC.value);
+            root.style.setProperty('--shd-y', inputs.shdY.value + 'px');
+
+            labels.brdW.innerText = inputs.brdW.value;
+            labels.shdY.innerText = inputs.shdY.value;
+
+            // 更新 CSS 程式碼顯示
+            cssOutput.innerHTML = `
+                <b>/* 1. 修改基礎邊框與陰影 (style.css 約 114 行) */</b><br>
+                .block {<br>
+                &nbsp;&nbsp;border: <span>${inputs.brdW.value}px</span> solid <span>${inputs.brdC.value}</span>;<br>
+                &nbsp;&nbsp;box-shadow: 0 <span>${inputs.shdY.value}px</span> 0 <span>${inputs.brdC.value}</span>;<br>
+                }<br><br>
+                <b>/* 2. 修改該顏色的背景 */</b><br>
+                .block.custom { background: <span>${inputs.bg.value.toUpperCase()}</span>; }
+            `;
+        }
+
+        function setPreset(hex) {
+            inputs.bg.value = hex;
+            update();
+        }
+
+        Object.values(inputs).forEach(input => input.addEventListener('input', update));
+        update();
+    </script>
+
+</body>
+</html>
